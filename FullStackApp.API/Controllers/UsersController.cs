@@ -9,9 +9,12 @@ using FullStackApp.Application.Users.Queries.GetUserById;
 using FullStackApp.Application.Users.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace FullStackApp.API.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/users")]
 public class UsersController : ControllerBase
@@ -23,6 +26,7 @@ public class UsersController : ControllerBase
         _mediator = mediator;
     }
 
+    [AllowAnonymous]
     [HttpPost("register")]
     public async Task<IActionResult> Register(RegisterUserCommand command)
     {
@@ -30,29 +34,33 @@ public class UsersController : ControllerBase
         return Ok(userId);
     }
 
+    [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginUserCommand command)
     {
         var token = await _mediator.Send(command);
         return Ok(token);
     }
-
     // CREATE
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserCommand command)
         => Ok(await _mediator.Send(command));
 
     // READ ALL
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> GetAll()
         => Ok(await _mediator.Send(new GetAllUsersQuery()));
 
     // READ BY ID
+    [Authorize]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(int id)
         => Ok(await _mediator.Send(new GetUserByIdQuery(id)));
 
     // UPDATE
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(int id, UpdateUserCommand command)
     {
@@ -62,6 +70,7 @@ public class UsersController : ControllerBase
     }
 
     // DELETE
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(int id)
     {

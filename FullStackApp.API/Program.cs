@@ -5,6 +5,11 @@ using FullStackApp.Application.Users.Commands.RegisterUser;
 using FullStackApp.Application.Common.Interfaces;
 using FullStackApp.Application.Interfaces;
 using FullStackApp.Infrastructure.Repositories;
+using FullStackApp.Infrastructure.Security;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 //using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,14 +34,39 @@ builder.Services.AddScoped<IApplicationDbContext>(provider =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
 
 // MediatR
 
 builder.Services.AddMediatR(typeof(RegisterUserCommand).Assembly);
 
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"]!);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
 
 var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 //if (app.Environment.IsDevelopment())
 //{
